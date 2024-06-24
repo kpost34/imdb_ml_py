@@ -85,13 +85,38 @@ df0 = df0.join(genre_dummies.add_prefix("genre_"))
 df0.columns
 
 
+### Calculate TF-IDFs from overviews & join back to DF
+df0['overview'].head(3) #examples
+
+#get TF-IDFs
+from sklearn.feature_extraction.text import TfidfVectorizer
+tfidf_mod = TfidfVectorizer(stop_words=stop_words) #create tfidf model & remove stop words
+X = tfidf_mod.fit_transform(df0['overview']) #fit model to data
+df_tfidf = pd.DataFrame(X.toarray(), columns=tfidf_mod.get_feature_names_out()) #populate df of TF-IDFs
+
+#calculate avg TF-IDF by column, sort in descending order, and take top 11 (above .01)
+overview_words = df_tfidf.mean().sort_values(ascending=False).iloc[0:11].index.to_list()
+
+#feature matrix of TF-IDF of top 11 terms
+df_tfidf_sub = df_tfidf[overview_words]
+
+#join back
+df0 = df0.join(df_tfidf_sub.add_prefix("overview_"))
+df0
+
+
 
 # EDA===============================================================================================
+#copy data
 df = df0.copy() 
 
+#create lists for plotting
 colors = ['blue', 'green', 'red', 'purple', 'orange', "grey"]
 nums = ['released_year', 'runtime_min', 'imdb_rating', 'meta_score', 'no_of_votes', 'gross']
-cats_n = ['director', 'star1', 'star2', 'star3']
+cats_n = ['director', 'star1', 'star2', 'star3', 'star4']
+list_words = ['overview_' + s for s in overview_words] 
+list_genres = ['genre_' + s for s in genre_dummies.columns]
+
 
 ## Univariate
 ### Histograms 
@@ -117,10 +142,10 @@ director_stars_vcs = {col: df_cats_n[col].value_counts() for col in df_cats_n.co
 plt.figure(figsize=(12, 10))
 
 for i, (col, counts) in enumerate(director_stars_vcs.items(), 1):
-    plt.subplot(2, 2, i)  # Create a 2x2 subplot grid and select the i-th subplot
+    plt.subplot(2, 3, i)  # Create a 2x2 subplot grid and select the i-th subplot
     plt.hist(counts.values, bins=range(1, counts.max() + 2), color=colors[i], edgecolor='black', 
              align='left')
-    plt.title(f'Histogram of Value Counts for {col}')
+    plt.title(f'Histogram of Value Counts \nfor {col}')
     plt.xlabel('Counts')
     plt.ylabel('Frequency')
     plt.xticks(range(1, counts.max() + 1))
@@ -137,6 +162,18 @@ df_cert_n = df['certificate'].value_counts().reset_index()
 
 plt.bar(df_cert_n['certificate'], df_cert_n['count'], edgecolor='black')
 plt.xticks(rotation=60)
+plt.show()
+plt.close()
+
+#overview terms (avg TF-IDF)
+df_overview_avg_sem = df_tfidf_sub.agg(['mean', 'sem']).transpose()
+
+plt.bar(x=df_overview_avg_sem.index, height=df_overview_avg_sem['mean'], edgecolor='black')
+plt.errorbar(x=df_overview_avg_sem.index, y=df_overview_avg_sem['mean'], 
+             yerr=df_overview_avg_sem['sem'], fmt="o", color="red")
+plt.xticks(rotation=60)
+plt.xlabel("Movie Overview Term")
+plt.ylabel("Average TF-IDF (+/- SEM)")
 plt.show()
 plt.close()
 
@@ -192,36 +229,138 @@ plt.show()
 plt.close()
 
 
-## TF-IDFs from overviews
-df['overview'].head(3)
-
-from sklearn.feature_extraction.text import TfidfVectorizer
-tfidf_mod = TfidfVectorizer() #create tfidf model
-X = tfidf_mod.fit_transform(df['overview']) #fit model to data
-df_tfidf = pd.DataFrame(X.toarray(), columns=tfidf_mod.get_feature_names_out()) #populate df of TF-IDFs
-
-#next steps
-#1) calculate average TF-IDF score across all documents (which can be used as the term's
-  #imortance and distinctiveness across the corpus)
-#2) sort these terms (columns) based on avg TF-IDF scores in descending order
-#3) choose the top N terms from the sorted list--N selected using specific requirements and
-  #constraints--either a fixed number or percentage
-#4) these top N terms are considered the most important and distinctive features based on TF-IDF
-  #scores and thus are the most relevant for distinguishing between documents in your corpus
-#5) construct a new feature matrix using only the top N terms selected in the previous step
 
 
 ## Bivariate
+### Numerical-numerical
+#### All pairwise combinations
+sns.pairplot(df[nums], diag_kind='kde')
+plt.show()
+plt.close()
+
+
+#### imdb_rating--runtime_min
+#get regression line and extract params
+import statsmodels.api as sm
+results_rate_time = sm.OLS(df['runtime_min'], sm.add_constant(df['imdb_rating'])).fit()
+
+b = results_rate_time.params[0]
+m = results_rate_time.params[1]
+
+#begin plotting
+plt.scatter(df['imdb_rating'], df['runtime_min'])
+plt.axline(xy1=(0, b), slope=m, color='red')
+plt.xlim(7.25, 9.5)
+plt.xlabel("IMDB Rating")
+plt.ylabel("Runtime (min)")
+
+plt.show()
+plt.close()
+#appears to be an outlier regarding runtime--rating wouldn't matter
+
+df[df['runtime_min'] > 300] #Gangs of Wasseypur
+
+
+#### meta_score-gross
+plt.scatter(df['meta_score'], df['gross'])
+plt.xlabel("Meta Score")
+plt.ylabel("Gross ($100 million)")
+
+plt.show()
+plt.close()
+
+
+#### imdb_rating-gross
+plt.scatter(df['imdb_rating'], df['gross'])
+plt.xlabel("IMDB Rating")
+plt.ylabel("Gross ($100 million)")
+
+plt.show()
+plt.close()
+
+
+#### imdb_rating-meta_score
+plt.scatter(df['imdb_rating'], df['meta_score'])
+plt.xlabel("IMDB Rating")
+plt.ylabel("Meta Score")
+
+plt.show()
+plt.close()
+
+
+#### released_year-gross
+plt.scatter(df['released_year'], df['gross'])
+plt.xlabel("Year of Release")
+plt.ylabel("Gross ($100 million)")
+
+plt.show()
+plt.close()
+
+
+#### imdb_rating-no_of_votes
+results_rate_votes = sm.OLS(df['no_of_votes'], sm.add_constant(df['imdb_rating'])).fit()
+
+b = results_rate_votes.params[0]
+m = results_rate_votes.params[1]
+
+plt.scatter(df['imdb_rating'], df['no_of_votes'])
+plt.axline(xy1=(0, b), slope=m, color='red')
+plt.xlim(7.25, 9.5)
+plt.ylim(0, 3e6)
+plt.xlabel("IMDB Rating")
+plt.ylabel("No. of votes")
+
+plt.show()
+plt.close()
+
+
+results_rate_time = sm.OLS(df['runtime_min'], sm.add_constant(df['imdb_rating'])).fit()
+
+b = results_rate_time.params[0]
+m = results_rate_time.params[1]
+
+#begin plotting
+plt.scatter(df['imdb_rating'], df['runtime_min'])
+plt.axline(xy1=(0, b), slope=m, color='red')
+plt.xlim(7.25, 9.5)
+plt.xlabel("IMDB Rating")
+plt.ylabel("Runtime (min)")
+
+
+#### Overview words TF-IDF
+df[list_words].corr().round(3)
+#out of these pairs, only world-war have a moderate correlation
+
+plt.scatter(df['overview_world'], df['overview_war'])
+plt.xlabel("world (TF-IDF)")
+plt.ylabel("war (TF-IDF)")
+plt.show()
+plt.close()
+
+#NOTE: unsure if worth showing the matrix or this plot on report
+
+
+### Binary-binary
+#grouped barplot?? 
+#21 genre dummy vars --> run corr() to see what's highly correlated before plotting
+df_genres_corr = df[list_genres].corr().abs().round(3)
+
+#identify all pairwises correlations > 0.3
+View(df_genres_corr[df_genres_corr > 0.3])
+#drama-action
+#animation-adventure
+#drama-adventure
+#drama-animation
+#history-biography
+
+
+### Cat/binary-numerical
+#### certificate-gross
 
 
 
 
-
-
-
-
-
-
+#### genres-imdb_rating
 
 
 
@@ -265,10 +404,6 @@ plt.close()
 #TV-MA - adult
 #Unrated
 #U/A
-
-
-
-# Explore Data======================================================================================
 
 
 
