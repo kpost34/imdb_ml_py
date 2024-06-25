@@ -1,4 +1,4 @@
-
+# This script does initial data cleaning/wrangling and performs EDA
 
 # Load Libraries and Set Options====================================================================
 ## Load libraries
@@ -18,7 +18,7 @@ np.set_printoptions(precision=4, suppress=True)
 
 
 
-# Source Functions and Import Data==================================================================
+# Source Functions and Objects and Import Data======================================================
 ## Change wd
 from pathlib import Path
 import os
@@ -28,8 +28,9 @@ os.chdir(root + 'code') #change wd
 Path.cwd() #returns new wd
 
 
-## Functions
-#insert function script here
+## Functions and objects
+from _00_helper_fns import make_genres_plot
+from _00_objects import stop_words
 
 
 ## Data
@@ -77,7 +78,7 @@ df0['released_year'] = df0['released_year'].astype(int)
 
 ### Convert genre into dummy variables & join back to DF
 #conversion
-genre_dummies = df0.genre.str.get_dummies(", ").rename(columns=str.lower)
+genre_dummies = df0.genre.str.get_dummies(", ").rename(columns=str.lower).astype(bool)
 genre_dummies.columns
 
 #join back
@@ -103,7 +104,6 @@ df_tfidf_sub = df_tfidf[overview_words]
 #join back
 df0 = df0.join(df_tfidf_sub.add_prefix("overview_"))
 df0
-
 
 
 # EDA===============================================================================================
@@ -346,7 +346,7 @@ plt.close()
 df_genres_corr = df[list_genres].corr().abs().round(3)
 
 #identify all pairwises correlations > 0.3
-View(df_genres_corr[df_genres_corr > 0.3])
+df_genres_corr[df_genres_corr > 0.3]
 #drama-action
 #animation-adventure
 #drama-adventure
@@ -354,118 +354,43 @@ View(df_genres_corr[df_genres_corr > 0.3])
 #history-biography
 
 
+### Wrangle genre data for plotting
+#hard-coded
+df_genre_sub = genre_dummies[['drama', 'action']]
+df_genre_n = df_genre_sub.groupby(['drama', 'action'], as_index=False).size()
+
+p_var = sns.catplot(x="drama", y="size", kind="bar", hue="action", data=df_genre_n)
+p_var.set_axis_labels(x_var=var.title(), y_var="Number")
+p_var=sns.move_legend(p_var, loc="lower center", ncol=2)
+plt.show()
+plt.close()
+
+#using function
+make_genres_plot(df=genre_dummies, var1='drama', var2='action')
+make_genres_plot(df=genre_dummies, var1='animation', var2='adventure')
+make_genres_plot(df=genre_dummies, var1='drama', var2='adventure')
+make_genres_plot(df=genre_dummies, var1='drama', var2='animation')
+make_genres_plot(df=genre_dummies, var1='history', var2='biography')
+
+
 ### Cat/binary-numerical
 #### certificate-gross
+#look at non-rare certificates only
+certs = df['certificate'].value_counts().reset_index().iloc[0:9,0]
+df_cert_gross = df[df['certificate'].isin(certs)][['certificate', 'gross']]
 
-
-
-
-#### genres-imdb_rating
-
-
-
-
-
-
-## Explore one-hot encoding
-#star cols
-df0.info()
-star1_counts = df0.star1.value_counts().sort_values(ascending=False) #8-12 + Other
-star2_counts = df0.star2.value_counts().sort_values(ascending=False)[0:20] #4-7 + Other
-star3_counts = df0.star3.value_counts().sort_values(ascending=False)[0:20] #4-5 + Other
-
-# Creating a histogram
-plt.hist(star1_counts, bins=12, edgecolor='black')
-
-# Adding titles and labels
-plt.title('Histogram of Values')
-plt.xlabel('Value')
-plt.ylabel('Frequency')
-
-# Showing the plot
+sns.catplot(x="gross", y="certificate", kind="box", data=df_cert_gross, sharey=False, orient='h')
+plt.xlabel('Gross ($100 million)')
+plt.ylabel("Certificate")
 plt.show()
 plt.close()
 
 
-#certificate
-#U = unrestricted for public exhibition and family-friendly
-#A = adults only
-#UA = unrestricted but parental discretion for children < 12
-#R = requires adult if < 17
-#PG - 13: some material inappropriate for children under 13
-#PG = some material may not be suitable for children
-#Passed
-#G = all ages admitted
-# Approved = pre-1968 titles - deemed 'moral'
-#TV-PG
-#GP
-#TV-14
-#16
-#TV-MA - adult
-#Unrated
-#U/A
 
-
-
-
-
-## Descriptive stats
-df_num = df0[['imdb_rating', 'meta_score', 'no_of_votes']]
-
-df_num.sum()
-df_num.mean()
-
-df_num.corr()
-df_num.cov()
-
-
-## Unique values
-df0['genre'].unique()
-df0['genre'].value_counts()
-
-
-## Summarize data
-
-
-
-## Visualizations
-
-
-
-## Assess missingness
-#by row
-df0.dropna() #286 rows with at least 1 NA (start with 1000, now 714)
-df0.dropna(how="all") #0 rows with ALL NAs
-df0.dropna(thresh=16) #thresh = # of non-NAs required (16 cols so all need to be NA); here
-  #714 remain (same as df0.dropna())--286 rows w/1+ NAs
-df0.dropna(thresh=15) #894 = 106 rows w/2+ NAs
-df0.dropna(thresh=14) #965 = 35 rows w/3+ NAs
-df0.dropna(thresh=13) #1000 (no row w/4+ NAs)
-#714 with 0 NAs, 180 with 1 NA, 71 with 2 NAs, 35 with 3 NAs
-
-#by column
-df0.series_title.isna() #returns Boolean Series of whether value is NA or not
-df0.dropna(axis="columns") #drops 3 cols that have at least 1 NA (imdb_rating, meta_score, gross)
-df0.dropna(axis="columns", how="all") #no change b/c no col has all NAs
-
-
-## Data transformation
-#duplicates
-df0.duplicated() #returns T/F on whether it's a duplicate
-df0.drop_duplicates() #1000, so none
-
-#rename() to create transformed version of dataset
-df0.rename(columns=str.upper) #cols are in uppercase
-df0.rename(columns={"series_title": "Series"}) #series_title renamed to Series
-
-
-## Discretization and binning
-df0.info()
-df0.head()
-
-
-
-
-
+# Save Data to File=================================================================================
+#save in pickle format to retain data types and categories
+# afile = open('data_initial_clean.pkl', 'wb')
+# pickle.dump(df, afile)
+# afile.close()
 
 
