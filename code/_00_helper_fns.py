@@ -76,7 +76,7 @@ def littles_mcar_test(data):
 
 
 
-# Feature Engineering Function======================================================================
+# Feature Engineering Functions=====================================================================
 ## Function to group rare categories
 def group_categories(variable, rare_cats, new_cat):
   if variable in rare_cats:
@@ -105,6 +105,36 @@ def make_qqplots(vars, remove_last=False):
   plt.tight_layout()
   plt.show()
   plt.close()
+
+
+
+# Modelling Function================================================================================
+## Function to recommend movie
+def get_rec_cosine(df, title, cosine_sim, n=10):
+  idx = df[df['title'] == title].index[0] #finds index of movie in df
+  sim_scores = list(enumerate(cosine_sim[idx])) #create list of similarity scores for given movie w/other movies
+  sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True) #sort scores in desc order
+  sim_scores = sim_scores[1:n + 1] #select top 10 (by default) except first one
+  movie_indices = [i[0] for i in sim_scores] #extract indices of most similar movies
+
+  #generate DF of movie_index and movie_title
+  df1a = df['title'].iloc[movie_indices].reset_index().rename(columns={'index': 'movie_index',
+                                                                        'title': 'movie_title'})
+  #generate DF of movie_index and similarity_score
+  df1b = pd.DataFrame(sim_scores, columns = ['movie_index', 'similarity_score'])
+
+  #join above two DFs together
+  df1 = df1a.merge(df1b, on='movie_index').round({'similarity_score': 3})
+  df1 = df1[['movie_title', 'similarity_score', 'movie_index']] #reorder rows
+  
+  return df1
+
+
+
+
+
+
+
 
 
 
