@@ -7,6 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
+from sklearn.preprocessing import OneHotEncoder
+import statsmodels.api as sm
+from sklearn.preprocessing import MinMaxScaler
 
 
 ## Options 
@@ -28,7 +31,7 @@ Path.cwd() #returns new wd
 
 
 ## Functions (and objects)
-from _00_helper_fns import group_categories
+from _00_helper_fns import group_categories, make_qqplots
 
 
 ## Data
@@ -74,7 +77,7 @@ df['certificate'] = df['certificate'].apply(group_categories, rare_cats=rare_cer
 
 
 ## director and stars
-## Explore one-hot encoding (and rare-label encoding)
+## Explore rare-label encoding
 ### Generate DFs for star & dir cols
 star1_counts = df.star1.value_counts().sort_values(ascending=False).to_frame() #8-12 + Other
 star2_counts = df.star2.value_counts().sort_values(ascending=False).to_frame() #4-7 + Other
@@ -128,30 +131,97 @@ plt.show()
 plt.close() 
 
 
-## Implement encoding
-### Rare-label encoding
-cats_star1 = star1_counts[0:9].index.tolist() #8-12 + Other
-cats_star2 = star2_counts[0:10].index.tolist() #4-7 + Other
-cats_star3 = star3_counts[0:8].index.tolist() #4-5 + Other
-cats_star4 = star4_counts[0:3].index.tolist() #2-3 + Other
-cats_dir = dir_counts[0:2].index.tolist() #8-14 + Other
+## Implement rare-label encoding
+#create lists of uncommon categories
+cats_star1 = star1_counts[9:].index.tolist() #8-12 + Other
+cats_star2 = star2_counts[10:].index.tolist() #4-7 + Other
+cats_star3 = star3_counts[8:].index.tolist() #4-5 + Other
+cats_star4 = star4_counts[3:].index.tolist() #2-3 + Other
+cats_dir = dir_counts[2:].index.tolist() #8-14 + Other
 
 
-## Explore rare-label encoding
-#certificate
-#U = unrestricted for public exhibition and family-friendly
-#A = adults only
-#UA = unrestricted but parental discretion for children < 12
-#R = requires adult if < 17
-#PG - 13: some material inappropriate for children under 13
-#PG = some material may not be suitable for children
-#Passed
-#G = all ages admitted
-# Approved = pre-1968 titles - deemed 'moral'
-#TV-PG
-#GP
-#TV-14
-#16
-#TV-MA - adult
-#Unrated
-#U/A
+#group categories
+df['star1'] = df['star1'].apply(group_categories, rare_cats=cats_star1, new_cat='Other')
+df['star2'] = df['star2'].apply(group_categories, rare_cats=cats_star2, new_cat='Other')
+df['star3'] = df['star3'].apply(group_categories, rare_cats=cats_star3, new_cat='Other')
+df['star4'] = df['star4'].apply(group_categories, rare_cats=cats_star4, new_cat='Other')
+df['director'] = df['director'].apply(group_categories, rare_cats=cats_dir, new_cat='Other')
+
+
+
+# Feature Engineering: One-hot Encoding=============================================================
+#subset data
+cats = ['star1', 'star2', 'star3', 'star4', 'director', 'certificate']
+df_cats = df[cats]
+
+#encode data
+encoder = OneHotEncoder() #create instance of 'OneHotEncoder'
+ar_cats_encoded = encoder.fit_transform(df_cats).toarray() #fit and transform data
+df_cats_encoded = pd.DataFrame(ar_cats_encoded, 
+                               columns=encoder.get_feature_names_out(cats)) #convert to DF
+
+
+
+# Feature Scaling===================================================================================
+#copy data
+df1 = df.copy()
+
+#create genres list and remove these items from nums list
+genres = [x for x in nums if x.startswith('genre_')]
+nums = [x for x in nums if not x.startswith('genre_')]
+
+
+## Make qqplots of numerical variables
+### Create grid of subplots
+nums1 = nums[0:6]
+nums2 = nums[6:12]
+nums3 = nums[12:18]
+
+make_qqplots(nums1)  
+make_qqplots(nums2)  
+make_qqplots(nums3, remove_last=True)  
+#lack of normality throughout
+
+
+## Apply normalization (min-max scaling)
+scaler = MinMaxScaler()
+ar_nums_scaled = scaler.fit_transform(df1[nums])
+
+ar_nums_scaled.min(axis=0)
+ar_nums_scaled.max(axis=0)
+
+df_nums_scaled = pd.DataFrame(ar_nums_scaled, columns=nums)
+df_nums_scaled
+
+
+
+# Finalize Feature Engineering======================================================================
+## Review of important cols/groups of cols
+df1['title'] #movie titles
+df_nums_scaled #scaled numerical vars
+df_cats_encoded #categorical vars that have underwent RLE and OHL
+df1[genres] #genre cols that underwent OHL
+
+
+## Combine all
+df_final = pd.concat([df1['title'],
+                     df_nums_scaled,
+                     df_cats_encoded,
+                     df1[genres]],
+                     axis=1)
+df_final
+
+
+
+# Save Data to File=================================================================================
+#save in pickle format to retain data types and categories
+# afile = open('data_final.pkl', 'wb')
+# pickle.dump(df_final, afile)
+# afile.close()
+
+
+
+
+
+
+
