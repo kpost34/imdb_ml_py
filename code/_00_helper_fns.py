@@ -9,6 +9,7 @@ from scipy.stats import chi2
 
 
 # EDA Function======================================================================================
+## Function to generate faceted barplots of genres
 def make_genres_plot(df, var1, var2):
   df1 = df[[var1, var2]]
   df1_n = df1.groupby([var1, var2], as_index=False).size()
@@ -18,6 +19,7 @@ def make_genres_plot(df, var1, var2):
   p_var=sns.move_legend(p_var, loc="lower center", ncol=2)
   plt.show()
   plt.close()
+
 
 
 # Missingness Function==============================================================================
@@ -75,12 +77,34 @@ def littles_mcar_test(data):
 
 
 # Feature Engineering Function======================================================================
+## Function to group rare categories
 def group_categories(variable, rare_cats, new_cat):
   if variable in rare_cats:
     return new_cat
   else:
     return variable
 
+
+## Function to generate faceted qqplots
+def make_qqplots(vars, remove_last=False):
+  #set fig and subplots
+  fig, axes = plt.subplots(2, 3, figsize=(8, 6))
+
+  #plot qqplots for each numerical predictor
+  for i, column_name in enumerate(vars):
+    row_index = i // 3
+    col_index = i % 3
+    ax = axes[row_index, col_index] 
+    sm.qqplot(df[column_name], line='s', ax=ax)
+    ax.set_title(f'{column_name}')
+    
+  if remove_last:
+    axes[1, 2].remove()
+
+  #adjust layout and display plot
+  plt.tight_layout()
+  plt.show()
+  plt.close()
 
 
 
