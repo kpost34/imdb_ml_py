@@ -177,9 +177,9 @@ nums1 = nums[0:6]
 nums2 = nums[6:12]
 nums3 = nums[12:18]
 
-make_qqplots(nums1)  
-make_qqplots(nums2)  
-make_qqplots(nums3, remove_last=True)  
+make_qqplots(df=df1, vars=nums1)  
+make_qqplots(df=df1, vars=nums2)  
+make_qqplots(df=df1, vars=nums3, remove_last=True)  
 #lack of normality throughout
 
 
@@ -196,15 +196,19 @@ df_nums_scaled
 
 
 # Finalize Feature Engineering======================================================================
+## Rename 'released_year' to 'year'
+df1['year'] = df1['released_year']
+
+
 ## Review of important cols/groups of cols
-df1['title'] #movie titles
+df1[['title', 'year']] #movie titles and (released) year (unscaled)
 df_nums_scaled #scaled numerical vars
 df_cats_encoded #categorical vars that have underwent RLE and OHL
 df1[genres] #genre cols that underwent OHL
 
 
 ## Combine all
-df_final = pd.concat([df1['title'],
+df_final = pd.concat([df1[['title', 'year']],
                      df_nums_scaled,
                      df_cats_encoded,
                      df1[genres]],
