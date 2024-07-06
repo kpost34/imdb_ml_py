@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import chi2
+import statsmodels.api as sm
 
 
 # EDA Function======================================================================================
@@ -86,7 +87,7 @@ def group_categories(variable, rare_cats, new_cat):
 
 
 ## Function to generate faceted qqplots
-def make_qqplots(vars, remove_last=False):
+def make_qqplots(df, vars, remove_last=False):
   #set fig and subplots
   fig, axes = plt.subplots(2, 3, figsize=(8, 6))
 
@@ -109,7 +110,7 @@ def make_qqplots(vars, remove_last=False):
 
 
 # Modelling Function================================================================================
-## Function to recommend movie
+## Function to recommend movie using cosine similarity matrix
 def get_rec_cosine(df, title, cosine_sim, n=10):
   idx = df[df['title'] == title].index[0] #finds index of movie in df
   sim_scores = list(enumerate(cosine_sim[idx])) #create list of similarity scores for given movie w/other movies
@@ -129,6 +130,40 @@ def get_rec_cosine(df, title, cosine_sim, n=10):
   
   return df1
 
+
+## Function to recommend movie using KNN
+def get_rec_knn(df, title, model, n=5):
+    #create two DFs: one with and one without movie titles
+    df_title = df.copy()
+    df = df_title.drop('title', axis=1)
+    
+    #find the index of the movie in df_title
+    idx = df_title[df_title['title'] == title].index[0]
+    
+    #get the feature vector of the movie from df
+    movie_features = df.iloc[idx].values.reshape(1, -1)
+    
+    #ensure movie_features is a DataFrame with column names
+    movie_features = pd.DataFrame(movie_features, columns=df.columns)
+    
+    #find the nearest neighbors
+    distances, indices = model.kneighbors(movie_features, n_neighbors = n + 1)
+    
+    #grab indices of recommended movies
+    recd_movie_indices = indices.flatten()[1:]
+    
+    #get the titles of the recommended movies (excluding the input movie itself)
+    df1a = df_title.iloc[recd_movie_indices]['title'].reset_index().rename(columns={"index": "movie_index",
+                                                                                    "title": "movie_title"})
+    #calculate similarities
+    df1b = pd.DataFrame({'similarity_score': 1-distances.flatten()[1:],
+                         'movie_index': recd_movie_indices})
+    
+    #join above two DFs together
+    df1 = df1a.merge(df1b, on='movie_index').round({'similarity_score': 3})
+    df1 = df1[['movie_title', 'similarity_score', 'movie_index']] #reorder rows
+    
+    return df1
 
 
 
