@@ -111,12 +111,12 @@ def make_qqplots(df, vars, remove_last=False):
 
 # Modelling Function================================================================================
 ## Function to recommend movie using cosine similarity matrix
-def get_rec_cosine(df, title, year=None, cosine_sim, n=10):
-  if year is not None:
-    idx = df[df['title'] == title and df['year'] == year].index[0] #finds index of movie in df
+def get_rec_cosine(df, title, mat, year=None, n=10):
+  if year is None:
+    idx = df[df['title'] == title].index[0] #finds index of movie in df
   else:
-    idx = df[df['title'] == title.index[0] #finds index of movie in df
-  sim_scores = list(enumerate(cosine_sim[idx])) #create list of similarity scores for given movie w/other movies
+    idx = df[(df['title'] == title) & (df['year'] == year)].index[0] #finds index of movie in df
+  sim_scores = list(enumerate(mat[idx])) #create list of similarity scores for given movie w/other movies
   sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True) #sort scores in desc order
   sim_scores = sim_scores[1:n + 1] #select top 10 (by default) except first one
   movie_indices = [i[0] for i in sim_scores] #extract indices of most similar movies
@@ -134,36 +134,17 @@ def get_rec_cosine(df, title, year=None, cosine_sim, n=10):
   return df1
 
 
-
-
-# def get_rec_cosine(df, title, cosine_sim, n=10):
-#   idx = df[df['title'] == title].index[0] #finds index of movie in df
-#   sim_scores = list(enumerate(cosine_sim[idx])) #create list of similarity scores for given movie w/other movies
-#   sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True) #sort scores in desc order
-#   sim_scores = sim_scores[1:n + 1] #select top 10 (by default) except first one
-#   movie_indices = [i[0] for i in sim_scores] #extract indices of most similar movies
-# 
-#   #generate DF of movie_index and movie_title
-#   df1a = df['title'].iloc[movie_indices].reset_index().rename(columns={'index': 'movie_index',
-#                                                                         'title': 'movie_title'})
-#   #generate DF of movie_index and similarity_score
-#   df1b = pd.DataFrame(sim_scores, columns = ['movie_index', 'similarity_score'])
-# 
-#   #join above two DFs together
-#   df1 = df1a.merge(df1b, on='movie_index').round({'similarity_score': 3})
-#   df1 = df1[['movie_title', 'similarity_score', 'movie_index']] #reorder rows
-#   
-#   return df1
-
-
 ## Function to recommend movie using KNN
-def get_rec_knn(df, title, model, n=5):
-    #create two DFs: one with and one without movie titles
+def get_rec_knn(df, title, model, year=None, n=5):
+    #create two DFs: one with and one without movie titles and year
     df_title = df.copy()
-    df = df_title.drop('title', axis=1)
+    df = df_title.drop(['title', 'year'], axis=1)
     
     #find the index of the movie in df_title
-    idx = df_title[df_title['title'] == title].index[0]
+    if year is None:
+      idx = df_title[df_title['title'] == title].index[0]
+    else:
+      idx = df_title[(df_title['title'] == title) & (df_title['year'] == year)].index[0]
     
     #get the feature vector of the movie from df
     movie_features = df.iloc[idx].values.reshape(1, -1)
@@ -189,14 +170,5 @@ def get_rec_knn(df, title, model, n=5):
     df1 = df1[['movie_title', 'similarity_score', 'movie_index']] #reorder rows
     
     return df1
-
-
-
-
-
-
-
-
-
 
 
