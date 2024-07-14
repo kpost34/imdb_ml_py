@@ -111,7 +111,7 @@ def make_qqplots(df, vars, remove_last=False):
 
 # Modelling Function================================================================================
 ## Function to recommend movie using cosine similarity matrix
-def get_rec_cosine(df, title, mat, year=None, n=10):
+def get_rec_cosine(df, title, mat, year=None, n=10, title_only=False):
   if year is None:
     idx = df[df['title'] == title].index[0] #finds index of movie in df
   else:
@@ -131,7 +131,13 @@ def get_rec_cosine(df, title, mat, year=None, n=10):
   df1 = df1a.merge(df1b, on='movie_index').round({'similarity_score': 3})
   df1 = df1[['movie_title', 'similarity_score', 'movie_index']] #reorder rows
   
-  return df1
+  #title-only output
+  if title_only:
+    df2 = df1['movie_title'].tolist()
+  else: 
+    df2 = df1
+  
+  return df2
 
 
 ## Function to recommend movie using KNN
@@ -170,5 +176,35 @@ def get_rec_knn(df, title, model, year=None, n=5):
     df1 = df1[['movie_title', 'similarity_score', 'movie_index']] #reorder rows
     
     return df1
+
+
+
+# Model Diagnostics Function========================================================================
+## Returns numbers of highly rated and total movies, their proportion, from users who rated inputted 
+  #movie highly
+def evaluate_rec(df_feat, mat, n, sel_title, df_title_user, thresh):
+  
+  #get recs using algo
+  t_alg_recs = get_rec_cosine(df=df_feat, title=sel_title, mat=mat, n=n, title_only=True)
+  
+  #get user_ids of users who watched and rated selected movie highly
+  df_title_user[df_title_user['title']==sel_title] #returns all instances in which selected movie watched
+  df_title_high = df_title_user[(df_title_user['title']==sel_title) & (df_title_user['rating']>=thresh)] #sel_title watched and rated highly
+  t_title_high_user = df_title_high['user_id'].tolist() #isolate users who rated sel_title highly
+  
+  #return movies watched by users who watched and rated selected movie highly and in recommendation list by algorithm
+  df_title_high_movies = df_title_user[df_title_user['user_id'].isin(t_title_high_user)] #all movies watched by users who rated sel_title highly
+  df_title_high_movies_recd = df_title_high_movies[df_title_high_movies['title'].isin(t_alg_recs)]
+  
+  #generate algo-rec'd movies by user (user_id)
+  df_title_high_movies_recd['al4'] = df_title_high_movies_recd['rating'] >= thresh
+  df_title_rec_prop = df_title_high_movies_recd['al4'].agg(['count', 'sum'])
+  df_title_rec_prop['prop'] = df_title_rec_prop['sum']/df_title_rec_prop['count']
+  df_title_rec_prop.name = None
+  
+  return df_title_rec_prop
+
+
+
 
 
