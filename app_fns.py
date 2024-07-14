@@ -60,6 +60,5 @@ def get_rec_cosine(df, title, mat, year=None, n=10, s_score=False, i_rank=False)
     df2 = df1.drop('Similarity Score', axis=1)
   else:
     df2 = df1.drop(['Similarity Score', 'IMDB Rank'], axis=1)
-  
 
   return df2
