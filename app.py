@@ -74,8 +74,10 @@ app_ui = ui.page_fluid(
     ui.nav_panel("Instructions", 
       ui.tags.br(),
       """Please enter the title of a movie in the dialog box. Use the slider to set the number of
-      recommended movies returned. By default, it will return the rank (i.e., strongest to weakest 
-      recommendation out of the total list), title, genre(s), director, and first star. The 
+      recommended movies returned. The app will always return the following information about the
+      movie enered into the box: title, year released, genre(s), director, and first star. By default, 
+      the app will return the same information for the recommended movies as well as the recommendation
+      rank or 'rec rank' (i.e., strongest to weakest recommendation out of the total list). The 
       similarity score (i.e., from the cosine similarity matrix using engineered features) and
       IMDB Rank (within the top 1000) are optionally returned using the checkboxes."""
     ),
@@ -128,8 +130,34 @@ app_ui = ui.page_fluid(
       ui.tags.br(),
       ui.h2("Diagnostics"),
       
-      ui.p("--Enter diagnostics information here once it's completed--")
-    
+      ui.p("""Precision at k (P@k) was used to evaluate the recommendation algorithm. This metric
+      determines how many of the top-k recommendations have high ratings from the same users who
+      rated the input movie highly. Out of the 1000 movies in the top IMDB movie list, 718 were used
+      in calculating P@k with user ratings data from """,
+      ui.a("Kaggle's The Movies Dataset.",
+      href="https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset")
+      ),
+      ui.p(""""Because users can rate the input movie highly and have not watched (and thus rated) the
+      top-k recommended movies, it's possible to calculate P@k on a per-movie basis or a per-movie-instance basis. The former means that the proportion or percentage of top-k recommended movies
+      rated highly by the group of users who rated the inputted movie highly would be the score 
+      that becomes one of the potentially 718 numbers averaged to determine the P@k. The latter
+      holds onto the actual fraction (number of top-k recommended movies rated highly over the
+      total number of top-k recommended movies watched by the group of users who rated the inputted
+      movie highly) when computing the P@k."""),
+      ui.p("""The P@k was computed for 5, 10, and 20 recommended movies and using both on a per-movie
+      and a per-movie-instance basis:"""),
+      ui.HTML("""
+        <ul>
+          <li>P@5 (per-movie): 0.593</li>
+          <li>P@5 (per-movie-instance): 0.633</li>
+          <li>P@10 (per-movie): 0.612</li>
+          <li>P@10 (per-movie-instance): 0.606</li>
+          <li>P@20 (per-movie): 0.613</li>
+          <li>P@20 (per-movie-instance): 0.590</li>
+        </ul>
+        """),
+        ui.p("""P@k greater than 0.5 is considered a strong performance, which is accomplished
+        when k = 5, 10, or 20 and on both per-movie and per-movie-instance bases.""")
     ),
     
     ui.nav_panel("Developer", 
@@ -204,16 +232,6 @@ def server(input, output, session):
     sim_score = input.chk_sim_score()
     imdb_rank = input.chk_imdb_rank()
     
-    
-    #check if movie title is provided
-    # if not movie_title or movie_title not in df0['title'].values:
-    #   return pd.DataFrame()
-    
-    #check if movie title is in database
-    # elif movie_title not in df0['title'].values:
-    #   return pd.DataFrame({'Message': [f"""The movie '{movie_title}' is not in the database. Please 
-    #                         enter a valid movie title."""]})
-    
     if movie_title in df0['title'].values:
       df_out = get_rec_cosine(df=df0, 
                               title=movie_title, 
@@ -236,9 +254,8 @@ app = App(app_ui, server)
 #3) add functionality for checkboxes
 #4) by default, it should return the title as well as the release year and genre (and maybe director
   #and star1?)
-
 #5) populate instructions tab
+
 #6) populate more info: diagnostics (once completed)
-#7) turn strings into objects that get imported
 #8) deploy app
 
