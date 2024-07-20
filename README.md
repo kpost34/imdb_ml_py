@@ -10,7 +10,7 @@ A Shiny for Python App was developed so that users could test out the algorithm.
 
 
 ## App
-+ [Shiny for Python App](need to add) 
++ [Shiny for Python App](https://kpost34.github.io/imdb_ml_py/) 
 
 #### **Project Creator: Keith Post**
 + [Github Profile](https://github.com/kpost34) 
