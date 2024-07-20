@@ -3,5 +3,7 @@
 .RData
 .Ruserdata
 data/
+code/__pycache__
+__pycache__
 *.Rproj
 *.DS_Store
