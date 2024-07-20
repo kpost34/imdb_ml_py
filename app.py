@@ -9,7 +9,7 @@ import pandas as pd
 
 
 ## Algorithm function
-from app_fns import get_movie_info, get_rec_cosine
+# from app_fns import get_movie_info, get_rec_cosine #ideal...but instead will create in script
 
 
 ## Data
@@ -22,6 +22,71 @@ df0 = pickle.load(file)
 #original data
 df_orig0 = pd.read_csv('imdb_top_1000.csv')
 
+
+# Custom Functions for app==========================================================================
+## Load modules
+import pandas as pd
+
+
+## Function to generate info on selected movie
+def get_movie_info(df, title):
+  cols = ['title', 'year', 'Genre', 'Director', 'Starring']
+  
+  df1 = df[df['title']==title]
+  df1 = df1[cols].rename(columns={'title': 'Movie Title',
+                                  'year': 'Year Released',
+                                  'Genre': 'Genre(s)'})
+  
+  return df1
+
+
+## Function to generate recommended movies
+def get_rec_cosine(df, title, mat, year=None, n=10, s_score=False, i_rank=False):
+  #conditional logic for presence/absence of year
+  if year is None:
+    idx = df[df['title'] == title].index[0] #finds index of movie in df
+  else:
+    idx = df[(df['title'] == title) & (df['year'] == year)].index[0] #finds index of movie in df
+    
+  #generate similarity scores
+  sim_scores = list(enumerate(mat[idx])) #create list of similarity scores for given movie w/other movies
+  sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True) #sort scores in desc order
+  sim_scores = sim_scores[1:n + 1] #select top 10 (by default) except first one
+  movie_indices = [i[0] for i in sim_scores] #extract indices of most similar movies
+
+  #create list objs
+  cols1 = ['title', 'year', 'Genre', 'Director', 'Starring']
+  cols2 = cols1 + ['similarity_score', 'movie_index']
+  
+  #generate DF of movie_index and movie_title, year, genre, director, and star1
+  df1a = df[cols1].iloc[movie_indices].reset_index().rename(columns={'index': 'movie_index'})
+  
+  #generate DF of movie_index and similarity_score
+  df1b = pd.DataFrame(sim_scores, columns = ['movie_index', 'similarity_score'])
+
+  #join above two DFs together
+  df1 = df1a.merge(df1b, on='movie_index').round({'similarity_score': 3})
+  df1 = df1
+  df1 = df1[cols2]
+  # df1 = df1[['movie_title', 'similarity_score', 'movie_index']] #reorder rows
+  df1 = df1.rename(columns={'title': 'Movie Title',
+                            'year': 'Year Released',
+                            'Genre': 'Genre(s)',
+                            'similarity_score': 'Similarity Score',
+                            'movie_index': 'IMDB Rank'})
+  df1.insert(loc=0, column='Rec Rank', value=range(1, len(df1)+1))
+  
+  #conditional display of results
+  if s_score and i_rank:
+    df2 = df1.copy()
+  elif s_score and not i_rank:
+    df2 = df1.drop('IMDB Rank', axis=1)
+  elif i_rank and not s_score:
+    df2 = df1.drop('Similarity Score', axis=1)
+  else:
+    df2 = df1.drop(['Similarity Score', 'IMDB Rank'], axis=1)
+
+  return df2
 
 
 # Data Wrangling====================================================================================
@@ -75,7 +140,7 @@ app_ui = ui.page_fluid(
       ui.tags.br(),
       """Please enter the title of a movie in the dialog box. Use the slider to set the number of
       recommended movies returned. The app will always return the following information about the
-      movie enered into the box: title, year released, genre(s), director, and first star. By default, 
+      movie entered into the box: title, year released, genre(s), director, and first star. By default, 
       the app will return the same information for the recommended movies as well as the recommendation
       rank or 'rec rank' (i.e., strongest to weakest recommendation out of the total list). The 
       similarity score (i.e., from the cosine similarity matrix using engineered features) and
@@ -96,26 +161,26 @@ app_ui = ui.page_fluid(
       ),
       
       ui.p(
-        """The movie genre was converted into dummy variables as one ore more genres can apply to a single
-        movie. A TF-IDF was performed on the movie overview, removing all stop words, and retaining
-        the top 11 words (above 0.01). These were performed prior to imputation as genre was a 
-        'composite' variable and overview was unique text."""
+        """The movie genre was converted into dummy variables as one or more genres can apply to a single
+        movie. A term frequency-inverse document frequency (TF-IDF) was performed on the movie overview, 
+        removing all stop words, and retaining the top 11 words (TF-IDF > 0.01). These steps were performed prior 
+        to imputation as genre was a 'composite' variable and overview was unique text."""
       ),
       
       ui.p(
         """The data were assessed for missingness, which was found for certificate, meta-score, and
-        grossed money earned. Little's MCAR test was performed, which was significant suggesting
-        that missingness was not completely at random. Certificate was imputed using the most
-        frequent category. Meta-score and grossed money earned were imputed using K-nearest neighbors."""
+        gross money earned. Little's missing completely at random (MCAR) test was performed, which was 
+        significant suggesting that missingness was not completely at random. Certificate was imputed using the most
+        frequent category. Meta-score and gross money earned were imputed using K-nearest neighbors."""
       ),
       
       ui.p(
         """Multicollinearity was assessed for all numerical fields and no pair was found to be highly
-        correlated (spearman rank correlation < 0.9 for all comparisons). Rare label encoding was conducted on certificate,
+        correlated (Spearman rank correlation < 0.9 for all comparisons). Rare label encoding was conducted on certificate,
         director, and all four star fields by retaining the most common categories and binning the remainder
         as "Other". These six features underwent one-hot encoding to generate sets of dummy variables.
-        All remaining numerical fields (excluding 0-1 dummy variables, strings, etc.) underwent
-        min-max scaling because of non-normal distributions."""
+        All remaining numerical fields (e.g., excluding 0-1 dummy variables, strings, etc.) underwent
+        min-max scaling because they had non-normal distributions."""
       ),
       
       ui.tags.br(),
@@ -123,29 +188,31 @@ app_ui = ui.page_fluid(
       ui.h2("Algorithm"),
       
       ui.p("""A cosine similarity matrix was generated using the cleaned, feature-engineered top 1000
-      IMDB movies dataset. A custom function called get_rec_cosine() was developed which takes in
+      IMDB movies dataset. A custom function called get_rec_cosine() was developed, which takes in
       the movie title (and year, if necessary) to generate a dataframe of recommended movies:
-      titles, similarity scores, and position in the IMDB top 1000."""),
+      titles, years released, genre(s), directors, first stars, similarity scores, and positions in 
+      the IMDB top 1000."""),
       
       ui.tags.br(),
       ui.h2("Diagnostics"),
       
       ui.p("""Precision at k (P@k) was used to evaluate the recommendation algorithm. This metric
-      determines how many of the top-k recommendations have high ratings from the same users who
-      rated the input movie highly. Out of the 1000 movies in the top IMDB movie list, 718 were used
-      in calculating P@k with user ratings data from """,
+      determines the proportions of the top-k algorithm-recommended movies have high ratings from the 
+      same users who rated the input movie highly. Out of the 1000 movies in the top IMDB movie list, 
+      718 were used in calculating P@k with user ratings data from """,
       ui.a("Kaggle's The Movies Dataset.",
       href="https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset")
       ),
-      ui.p(""""Because users can rate the input movie highly and have not watched (and thus rated) the
-      top-k recommended movies, it's possible to calculate P@k on a per-movie basis or a per-movie-instance basis. The former means that the proportion or percentage of top-k recommended movies
+      ui.p("""Because users can rate the input movie highly and have not watched (and thus rated) the
+      top-k recommended movies, it's possible to calculate P@k on a per-movie basis or a 
+      per-movie-instance basis. The former means that the proportion of top-k recommended movies
       rated highly by the group of users who rated the inputted movie highly would be the score 
       that becomes one of the potentially 718 numbers averaged to determine the P@k. The latter
       holds onto the actual fraction (number of top-k recommended movies rated highly over the
       total number of top-k recommended movies watched by the group of users who rated the inputted
       movie highly) when computing the P@k."""),
-      ui.p("""The P@k was computed for 5, 10, and 20 recommended movies and using both on a per-movie
-      and a per-movie-instance basis:"""),
+      ui.p("""The P@k was computed using a threshold rating of at least 4/5 for 5, 10, and 20 recommended 
+      movies and using both per-movie and per-movie-instance bases:"""),
       ui.HTML("""
         <ul>
           <li>P@5 (per-movie): 0.593</li>
@@ -247,15 +314,4 @@ def server(input, output, session):
 
 app = App(app_ui, server)
 
-
-#Updates:
-#1) rename the columns to say: "Movie Title", "Similarity Score", and "IMDB Rank"
-#2) add a row number field so that it ranks the recommendations from 1 to x
-#3) add functionality for checkboxes
-#4) by default, it should return the title as well as the release year and genre (and maybe director
-  #and star1?)
-#5) populate instructions tab
-
-#6) populate more info: diagnostics (once completed)
-#8) deploy app
 
