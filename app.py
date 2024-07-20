@@ -14,8 +14,13 @@ import pandas as pd
 
 ## Data
 #clean data
-root = '/Users/keithpost/Documents/Python/Python projects/imdb_ml_py/'
-os.chdir(root + 'data')
+root = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(root, 'data')
+
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
+
+os.chdir(data_dir)
 file = open('data_final.pkl', 'rb')
 df0 = pickle.load(file)
 
