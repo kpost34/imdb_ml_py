@@ -55,7 +55,7 @@ cosine_sim = cosine_similarity(df)
 ## Join clean df and raw df
 df0 = df0.merge(df_orig, on=['title', 'year'])
 
-# 
+
 
 # UI================================================================================================
 app_ui = ui.page_fluid(
@@ -92,66 +92,62 @@ app_ui = ui.page_fluid(
     ui.nav_panel("More info", 
       ui.div(
         ui.tags.br(),
+        #create a collapseable tab
+        ui.accordion(
         
         #data preparation section
-        ui.h2("Data Preparation"),
+        ui.accordion_panel("Data Preparation",
         
-        ui.p(
-          "The ", 
-          ui.a("top 1000 movies by IMDB rating", 
-          href="https://www.kaggle.com/datasets/harshitshankhdhar/imdb-dataset-of-top-1000-movies-and-tv-shows",
-          target="_blank"),
-          app_obj.str_data_prep1
+          ui.p(
+            "The ", 
+            ui.a("top 1000 movies by IMDB rating", 
+            href="https://www.kaggle.com/datasets/harshitshankhdhar/imdb-dataset-of-top-1000-movies-and-tv-shows",
+            target="_blank"),
+            app_obj.str_data_prep1
+          ),
+          
+          ui.p(app_obj.str_data_prep2),
+          ui.p(app_obj.str_data_prep3),
+          ui.p(app_obj.str_data_prep4),
+          open=False
         ),
-        
-        ui.p(
-          app_obj.str_data_prep2
-        ),
-        
-        ui.p(
-          app_obj.str_data_prep3
-        ),
-        
-        ui.p(
-          app_obj.str_data_prep4
-        ),
-        
-        ui.tags.br(),
         
         #algorithm section
-        ui.h2("Algorithm"),
+        ui.accordion_panel("Algorithm",
         
-        ui.p(
-          app_obj.str_algo
+          ui.p(app_obj.str_algo),
+          open=False
         ),
         
-        ui.tags.br(),
+        # ui.tags.br(),
         
         #diagnostics section
-        ui.h2("Diagnostics"),
+        ui.accordion_panel("Diagnostics",
         
-        ui.p(
-          app_obj.str_diagnostics1,
-          ui.a("Kaggle's The Movies Dataset.",
-          href="https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset",
-          target="_blank")
-        ),
-        ui.p(
-          app_obj.str_diagnostics2
-        ),
-        ui.p(app_obj.str_diagnostics3),
-        ui.HTML("""
-          <ul>
-            <li>P@5 (per-movie): 0.593</li>
-            <li>P@5 (per-movie-instance): 0.633</li>
-            <li>P@10 (per-movie): 0.612</li>
-            <li>P@10 (per-movie-instance): 0.606</li>
-            <li>P@20 (per-movie): 0.613</li>
-            <li>P@20 (per-movie-instance): 0.590</li>
-          </ul>
-          """),
+          ui.p(
+            app_obj.str_diagnostics1,
+            ui.a("Kaggle's The Movies Dataset.",
+            href="https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset",
+            target="_blank")
+          ),
+          ui.p(app_obj.str_diagnostics2),
+          ui.p(app_obj.str_diagnostics3),
+          ui.HTML("""
+            <ul>
+              <li>P@5 (per-movie): 0.593</li>
+              <li>P@5 (per-movie-instance): 0.633</li>
+              <li>P@10 (per-movie): 0.612</li>
+              <li>P@10 (per-movie-instance): 0.606</li>
+              <li>P@20 (per-movie): 0.613</li>
+              <li>P@20 (per-movie-instance): 0.590</li>
+            </ul>
+            """),
           ui.p(app_obj.str_diagnostics4),
-        style="margin-left: 5%; margin-right: 5%; margin-bottom: 5%")
+          open=False
+        )
+      ),
+      
+      style="margin-left: 5%; margin-right: 5%; margin-bottom: 5%")
     ),
     
     #developer info tab
@@ -212,6 +208,7 @@ def server(input, output, session):
       
       return df_sel
   
+  
   @render.text
   def txt_recs():
     movie_title = input.txt_movie()
@@ -252,12 +249,14 @@ app = App(app_ui, server)
 #3) Try to deploy app while it imports functions from app_fns.py
 #4) Add horizontal margins to text
 #5) Add vertical margins to text
-
 #6) Create separate obj script which gets imported and try to deploy app using that architecture
-#7) Use external script to create merged DF
-#8) Read in merged DF from item 7
 #9) Adjust widths of table columns
 #10) Set up "More Info" page such that each header is an accordion
+
+
+#7) Use external script to create merged DF
+#8) Read in merged DF from item 7
+
 
 
 
