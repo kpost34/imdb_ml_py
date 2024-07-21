@@ -159,7 +159,8 @@ app_ui = ui.page_fluid(
       ui.p(
         "The ", 
         ui.a("top 1000 movies by IMDB rating", 
-        href="https://www.kaggle.com/datasets/harshitshankhdhar/imdb-dataset-of-top-1000-movies-and-tv-shows"),
+        href="https://www.kaggle.com/datasets/harshitshankhdhar/imdb-dataset-of-top-1000-movies-and-tv-shows",
+        target="_blank"),
         """ were used as the data source. This data file contains the following information: movie title,
         year of release, certificate (rating), runtime, genre, IMDB rating, overview, meta-score,
         director, stars 1-4, and money grossed."""
@@ -206,7 +207,8 @@ app_ui = ui.page_fluid(
       same users who rated the input movie highly. Out of the 1000 movies in the top IMDB movie list, 
       718 were used in calculating P@k with user ratings data from """,
       ui.a("Kaggle's The Movies Dataset.",
-      href="https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset")
+      href="https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset",
+      target="_blank")
       ),
       ui.p("""Because users can rate the input movie highly and have not watched (and thus rated) the
       top-k recommended movies, it's possible to calculate P@k on a per-movie basis or a 
@@ -237,19 +239,19 @@ app_ui = ui.page_fluid(
       ui.h2("Keith Post"),
       ui.p(
         "For source code, click ", 
-        ui.a("here", href="https://github.com/kpost34/imdb_ml_py"),
+        ui.a("here", href="https://github.com/kpost34/imdb_ml_py", target="_blank"),
         
         ui.tags.br(),
         ui.tags.br(),
         
         "Check out my ", 
-        ui.a("GitHub", href="https://github.com/kpost34"),
+        ui.a("GitHub", href="https://github.com/kpost34", target="_blank"),
         " page for more coding projects",
         
         ui.tags.br(),
         ui.tags.br(),
         
-        ui.a("LinkedIn", href="https://www.linkedin.com/in/keith-post/")
+        ui.a("LinkedIn", href="https://www.linkedin.com/in/keith-post/", target="_blank")
       )
     ),
     id="tab"
@@ -318,5 +320,27 @@ def server(input, output, session):
 
 
 app = App(app_ui, server)
+
+
+
+#TO DO:
+#0) Get hyperlinks to open in new tabs
+#1) Fix hyperlinks
+#2) Add horizontal margins to text
+#3) Add vertical margins to text
+#4) Try to deploy app while it imports functions from app_fns.py
+#5) Create separate obj script which gets imported and try to deploy app using that architecture
+#6) Use external script to create merged DF
+#7) Read in merged DF from item 6
+
+
+
+
+
+
+
+
+
+
 
 
