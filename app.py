@@ -243,28 +243,6 @@ app = App(app_ui, server)
 
 
 
-#TO DO:
-#1) Get hyperlinks to open in new tabs
-#2) Fix hyperlinks
-#3) Try to deploy app while it imports functions from app_fns.py
-#4) Add horizontal margins to text
-#5) Add vertical margins to text
-#6) Create separate obj script which gets imported and try to deploy app using that architecture
-#9) Adjust widths of table columns
-#10) Set up "More Info" page such that each header is an accordion
-
-
-#7) Use external script to create merged DF
-#8) Read in merged DF from item 7
-
-
-
-
-
-
-
-
-
 
 
 
