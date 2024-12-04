@@ -6,7 +6,7 @@ The objective of this project was to develop a machine learning algorithm that c
 
 Diagnostics were evaluated by measuring P@k for 5, 10, and 20 recommended movies using a threshold rating of 4/5 to determine whether a movie was considered 'rated highly'. User ratings were obtained from [Kaggle's The Movie Dataset](https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset). The P@5, P@10, and P@20 scores, whether evaluated on a per-movie or per-movie-instance basis, were at least 0.59 indicating that the recommendation system performs strongly.
 
-A Shiny for Python App was developed so that users could test out the algorithm.
+A Shiny for Python App was developed so that users could test out the algorithm. Deployment of the app was accomplished through [GitHub Pages](https://www.appsilon.com/post/shiny-for-python-deploy-github-pages).
 
 
 ## App
